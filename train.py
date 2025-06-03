@@ -11,9 +11,9 @@ from tqdm import tqdm
 
 def train():
     dataset_path = 'data/processed_transposed.pt'
-    batch_size = 128
+    batch_size = 64
     num_epochs = 100
-    lr = 1e-4
+    lr = 2.5e-4
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Load dataset
@@ -23,7 +23,7 @@ def train():
     val_loader = DataLoader(val_data, batch_size=batch_size)
 
     chord_vocab_size = train_data.chord.max().item() + 1
-    model = ChordMelodyTransformerV3Plus(vocab_size=129, chord_vocab_size=chord_vocab_size).to(device)
+    model = ChordMelodyTransformerV2(vocab_size=129, chord_vocab_size=chord_vocab_size).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     best_val = float('inf')
@@ -61,7 +61,7 @@ def train():
 
         if avg_val < best_val:
             best_val = avg_val
-            torch.save(model.state_dict(), 'models/best_model.pt')
+            torch.save(model.state_dict(), 'models/best_model_3.pt')
             print("✅ Saved best model")
 
 

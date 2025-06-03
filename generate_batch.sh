@@ -25,7 +25,7 @@ do
 
     echo "🎵 Generating MIDI $i with chords: $chords"
 
-    python generate.py \
+    python generate_v3.py \
         --chords $chords \
         --output output/generated_batch/generated_$i.mid \
         --max_length 64 
