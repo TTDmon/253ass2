@@ -3,30 +3,37 @@ import argparse
 from pathlib import Path
 import miditoolkit
 from models.chord_melody_transformer import ChordMelodyTransformerV2
+from models.popmag import ChordMelodyTransformerV3Plus
 
-def save_melody_only(melody_ids, path, ticks_per_beat=480):
+def save_melody_only(melody_ids, path, ticks_per_beat=480, note_unit=1.0):
     midi = miditoolkit.MidiFile(ticks_per_beat=ticks_per_beat)
     inst = miditoolkit.Instrument(program=0, is_drum=False, name="Melody")
+    note_duration = int(ticks_per_beat * note_unit)
+
     for i, pitch in enumerate(melody_ids):
-        if pitch > 0 and pitch < 128:
-            inst.notes.append(miditoolkit.Note(velocity=80, pitch=pitch,
-                                               start=i*ticks_per_beat, end=(i+1)*ticks_per_beat))
+        if 0 < pitch < 128:
+            start = i * note_duration
+            end = start + note_duration
+            inst.notes.append(miditoolkit.Note(velocity=80, pitch=pitch, start=start, end=end))
     midi.instruments.append(inst)
     midi.dump(path)
     print(f"✅ Saved melody-only MIDI to {path}")
 
-def save_combined_midi(melody_ids, chord_labels, path, ticks_per_beat=480):
+def save_combined_midi(melody_ids, chord_labels, path, ticks_per_beat=480, note_unit=1.0):
     midi = miditoolkit.MidiFile(ticks_per_beat=ticks_per_beat)
     inst = miditoolkit.Instrument(program=0, is_drum=False, name="Melody")
+    note_duration = int(ticks_per_beat * note_unit)
+
     for i, pitch in enumerate(melody_ids):
-        if pitch > 0 and pitch < 128:
-            inst.notes.append(miditoolkit.Note(velocity=80, pitch=pitch,
-                                               start=i*ticks_per_beat, end=(i+1)*ticks_per_beat))
+        if 0 < pitch < 128:
+            start = i * note_duration
+            end = start + note_duration
+            inst.notes.append(miditoolkit.Note(velocity=80, pitch=pitch, start=start, end=end))
     midi.instruments.append(inst)
 
-    # Chord as markers
     for i, chord in enumerate(chord_labels):
-        midi.markers.append(miditoolkit.Marker(text=chord, time=i*ticks_per_beat))
+        time = i * note_duration
+        midi.markers.append(miditoolkit.Marker(text=chord, time=time))
 
     midi.dump(path)
     print(f"✅ Saved combined chord+melody MIDI to {path}")
@@ -34,13 +41,14 @@ def save_combined_midi(melody_ids, chord_labels, path, ticks_per_beat=480):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chords', type=str, nargs='+', required=True, help='Chord labels (e.g. C:maj7 D:min7)')
-    parser.add_argument('--model_path', type=str, default='models/best_model.pt')
+    parser.add_argument('--model_path', type=str, default='models/best_model_2.pt')
     parser.add_argument('--data_path', type=str, default='data/processed_transposed.pt')
     parser.add_argument('--output', type=str, default='output/melody.mid')
     parser.add_argument('--max_length', type=int, default=32)
     parser.add_argument('--temperature', type=float, default=1.2)
     parser.add_argument('--start_pitch', type=int, default=60)
     parser.add_argument('--combine', action='store_true', help='Combine chords with melody')
+    parser.add_argument('--note_unit', type=float, default=1.0, help='Note length in beats (e.g. 0.25 = sixteenth note)')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -77,12 +85,12 @@ def main():
             melody.append(next_note)
     melody = melody[1:]  # remove start token
 
-    # Save
+    # Save output MIDI
     Path(args.output).parent.mkdir(exist_ok=True, parents=True)
     if args.combine:
-        save_combined_midi(melody, args.chords, args.output)
+        save_combined_midi(melody, args.chords, args.output, note_unit=args.note_unit)
     else:
-        save_melody_only(melody, args.output)
+        save_melody_only(melody, args.output, note_unit=args.note_unit)
 
 if __name__ == "__main__":
     main()

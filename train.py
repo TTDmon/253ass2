@@ -3,6 +3,7 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from models.chord_melody_transformer import ChordMelodyTransformerV2
+from models.popmag import ChordMelodyTransformerV3Plus
 from music_dataset import ChordMelodyDataset
 from pathlib import Path
 from tqdm import tqdm
@@ -10,8 +11,8 @@ from tqdm import tqdm
 
 def train():
     dataset_path = 'data/processed_transposed.pt'
-    batch_size = 64
-    num_epochs = 25
+    batch_size = 128
+    num_epochs = 100
     lr = 1e-4
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -22,7 +23,7 @@ def train():
     val_loader = DataLoader(val_data, batch_size=batch_size)
 
     chord_vocab_size = train_data.chord.max().item() + 1
-    model = ChordMelodyTransformerV2(vocab_size=129, chord_vocab_size=chord_vocab_size).to(device)
+    model = ChordMelodyTransformerV3Plus(vocab_size=129, chord_vocab_size=chord_vocab_size).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     best_val = float('inf')
