@@ -33,7 +33,7 @@ class ChordMelodyTransformerV3(nn.Module):
         decoder_layer = nn.TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout, batch_first=True)
         self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
 
-        # 双输出分支
+        # 2 outputs
         self.pitch_out = nn.Linear(d_model, pitch_vocab_size)
         self.duration_out = nn.Linear(d_model, duration_vocab_size)
 
@@ -42,7 +42,7 @@ class ChordMelodyTransformerV3(nn.Module):
         return mask.masked_fill(mask == 1, float('-inf')).masked_fill(mask == 0, float(0.0))
 
     def forward(self, chord_seq, pitch_input, duration_input):
-        # 输入维度: [B, L]
+        # input dim: [B, L]
         device = chord_seq.device
 
         chord_emb = self.pos_encoder(self.chord_embedding(chord_seq))
